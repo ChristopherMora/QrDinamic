@@ -10,8 +10,26 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
     expose:
       - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.qrdinamic-web.rule=Host(`${TRAEFIK_HOST}`)
+      - traefik.http.routers.qrdinamic-web.entrypoints=web
+      - traefik.http.routers.qrdinamic-web.service=qrdinamic
+      - traefik.http.routers.qrdinamic-websecure.rule=Host(`${TRAEFIK_HOST}`)
+      - traefik.http.routers.qrdinamic-websecure.entrypoints=websecure
+      - traefik.http.routers.qrdinamic-websecure.tls=true
+      - traefik.http.routers.qrdinamic-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.qrdinamic-websecure.service=qrdinamic
+      - traefik.http.services.qrdinamic.loadbalancer.server.port=3000
+    networks:
+      - dokploy-network
     volumes:
       - qrdinamic_data:/app/data
 
 volumes:
   qrdinamic_data:
+
+networks:
+  dokploy-network:
+    external: true

@@ -50,12 +50,14 @@ El proyecto ya incluye:
 ```env
 PUBLIC_BASE_URL=https://qr.tudominio.com
 FALLBACK_URL=/qr/not-found
+TRAEFIK_HOST=qr.tudominio.com
 ```
 
 Notas:
 - Dentro del contenedor la app corre en `PORT=3000`.
 - En esta configuración no se publica puerto al host; el acceso recomendado es por dominio (Traefik/Dokploy).
 - `DATA_FILE_PATH` ya queda configurado en el compose como `/app/data/qrs.json`.
+- `TRAEFIK_HOST` define el host del router (fallback manual por labels de Traefik).
 
 ### Opción Dockerfile (sin compose)
 
