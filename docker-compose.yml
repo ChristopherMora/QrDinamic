@@ -4,12 +4,12 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: ${APP_PORT:-3000}
       DATA_FILE_PATH: /app/data/qrs.json
       FALLBACK_URL: ${FALLBACK_URL:-/qr/not-found}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
-    ports:
-      - "3000"
+    expose:
+      - "3107"
     networks:
       - dokploy-network
     volumes:
