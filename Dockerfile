@@ -18,6 +18,6 @@ USER node
 EXPOSE 3107
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "const p=process.env.PORT||3000; fetch(`http://127.0.0.1:${p}/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1));"
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/health || exit 1
 
 CMD ["node", "src/server.js"]
