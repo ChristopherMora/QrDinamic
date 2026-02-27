@@ -10,6 +10,12 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
     expose:
       - "3107"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.qrdinamic.rule=Host(`qr.dofer.mx`)
+      - traefik.http.routers.qrdinamic.entrypoints=web
+      - traefik.http.services.qrdinamic.loadbalancer.server.port=3107
     networks:
       - dokploy-network
     volumes:
