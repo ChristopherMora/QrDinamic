@@ -1,9 +1,6 @@
-version: "3.9"
-
 services:
   qrdinamic:
     build: .
-    container_name: qrdinamic
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -11,8 +8,8 @@ services:
       DATA_FILE_PATH: /app/data/qrs.json
       FALLBACK_URL: ${FALLBACK_URL:-/qr/not-found}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    expose:
+      - "3000"
     volumes:
       - qrdinamic_data:/app/data
 

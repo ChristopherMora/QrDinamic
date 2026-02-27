@@ -48,14 +48,13 @@ El proyecto ya incluye:
 4. Configura estas variables de entorno en Dockploy:
 
 ```env
-APP_PORT=3000
 PUBLIC_BASE_URL=https://qr.tudominio.com
 FALLBACK_URL=/qr/not-found
 ```
 
 Notas:
-- `APP_PORT` es el puerto externo publicado por Docker Compose.
 - Dentro del contenedor la app corre en `PORT=3000`.
+- En esta configuración no se publica puerto al host; el acceso recomendado es por dominio (Traefik/Dokploy).
 - `DATA_FILE_PATH` ya queda configurado en el compose como `/app/data/qrs.json`.
 
 ### Opción Dockerfile (sin compose)
