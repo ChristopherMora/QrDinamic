@@ -4,24 +4,12 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: ${APP_PORT:-3000}
+      PORT: 3000
       DATA_FILE_PATH: /app/data/qrs.json
       FALLBACK_URL: ${FALLBACK_URL:-/qr/not-found}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
-    expose:
-      - "${APP_PORT:-3000}"
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.qrdinamic-web.rule=Host(`qr.dofer.mx`)
-      - traefik.http.routers.qrdinamic-web.entrypoints=web
-      - traefik.http.routers.qrdinamic-web.service=qrdinamic
-      - traefik.http.routers.qrdinamic-websecure.rule=Host(`qr.dofer.mx`)
-      - traefik.http.routers.qrdinamic-websecure.entrypoints=websecure
-      - traefik.http.routers.qrdinamic-websecure.tls=true
-      - traefik.http.routers.qrdinamic-websecure.tls.certresolver=letsencrypt
-      - traefik.http.routers.qrdinamic-websecure.service=qrdinamic
-      - traefik.http.services.qrdinamic.loadbalancer.server.port=${APP_PORT:-3000}
+    ports:
+      - "3000"
     networks:
       - dokploy-network
     volumes:
