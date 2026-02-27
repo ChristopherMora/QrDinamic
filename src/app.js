@@ -1,4 +1,6 @@
 const express = require("express");
+const path = require("path");
+const QRCode = require("qrcode");
 const { isValidDestinationUrl, isValidSlug } = require("./validators");
 
 function toApiModel(record) {
@@ -27,9 +29,51 @@ function normalizeOptionalName(value) {
   return normalized.length === 0 ? null : normalized;
 }
 
-function createApp({ store, fallbackUrl }) {
+function firstForwardedValue(rawHeader) {
+  if (typeof rawHeader !== "string") {
+    return null;
+  }
+
+  const [firstPart] = rawHeader.split(",");
+  const value = firstPart.trim();
+  return value.length > 0 ? value : null;
+}
+
+function inferPublicBaseUrl(req) {
+  const forwardedProto = firstForwardedValue(req.get("x-forwarded-proto"));
+  const forwardedHost = firstForwardedValue(req.get("x-forwarded-host"));
+
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get("host");
+
+  if (!host) {
+    return null;
+  }
+
+  return `${protocol}://${host}`;
+}
+
+function parseOptionalSize(rawSize) {
+  if (rawSize === undefined) {
+    return 300;
+  }
+
+  const size = Number.parseInt(rawSize, 10);
+  if (!Number.isInteger(size) || size < 64 || size > 2048) {
+    return null;
+  }
+
+  return size;
+}
+
+function createApp({ store, fallbackUrl, publicBaseUrl = null }) {
   const app = express();
   app.use(express.json());
+
+  app.get("/admin", (_req, res) => {
+    const adminPath = path.join(__dirname, "..", "public", "admin.html");
+    return res.sendFile(adminPath);
+  });
 
   app.get("/", (_req, res) => {
     res.json({
@@ -124,6 +168,61 @@ function createApp({ store, fallbackUrl }) {
       return res.status(404).json({ error: "QR no encontrado" });
     }
     return res.json(toApiModel(record));
+  });
+
+  app.get("/api/qrs/:slug/qr", async (req, res) => {
+    const record = store.getBySlug(req.params.slug);
+    if (!record) {
+      return res.status(404).json({ error: "QR no encontrado" });
+    }
+
+    const format =
+      typeof req.query.format === "string"
+        ? req.query.format.trim().toLowerCase()
+        : "png";
+
+    if (format !== "png" && format !== "svg") {
+      return res.status(400).json({
+        error: "format inválido: usa png o svg"
+      });
+    }
+
+    const size = parseOptionalSize(req.query.size);
+    if (size === null) {
+      return res.status(400).json({
+        error: "size inválido: usa un entero entre 64 y 2048"
+      });
+    }
+
+    const baseUrl = publicBaseUrl || inferPublicBaseUrl(req);
+    if (!baseUrl) {
+      return res.status(500).json({
+        error: "No se pudo construir la URL pública del QR"
+      });
+    }
+
+    const qrTargetUrl = new URL(`/qr/${record.slug}`, baseUrl).toString();
+    const qrOptions = {
+      width: size,
+      margin: 1,
+      errorCorrectionLevel: "M"
+    };
+
+    if (format === "svg") {
+      const svg = await QRCode.toString(qrTargetUrl, {
+        ...qrOptions,
+        type: "svg"
+      });
+      res.type("image/svg+xml");
+      return res.send(svg);
+    }
+
+    const png = await QRCode.toBuffer(qrTargetUrl, {
+      ...qrOptions,
+      type: "png"
+    });
+    res.type("image/png");
+    return res.send(png);
   });
 
   app.patch("/api/qrs/:slug", async (req, res) => {

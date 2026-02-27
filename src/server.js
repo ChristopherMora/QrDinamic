@@ -8,7 +8,8 @@ async function start() {
 
   const app = createApp({
     store,
-    fallbackUrl: config.fallbackUrl
+    fallbackUrl: config.fallbackUrl,
+    publicBaseUrl: config.publicBaseUrl
   });
 
   app.listen(config.port, () => {

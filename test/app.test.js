@@ -122,3 +122,42 @@ test("si falla tracking la redirección continúa", async (t) => {
   assert.equal(redirectResponse.statusCode, 302);
   assert.equal(redirectResponse.headers.location, "https://dofer.mx/ok");
 });
+
+test("genera QR SVG para un slug existente", async (t) => {
+  const { app } = await createTestContext(t);
+
+  await request(app).post("/api/qrs").send({
+    slug: "con-qr-svg",
+    destination_url: "https://dofer.mx/landing"
+  });
+
+  const response = await request(app).get("/api/qrs/con-qr-svg/qr?format=svg");
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers["content-type"], /image\/svg\+xml/);
+  const bodyText = Buffer.from(response.body).toString("utf8");
+  assert.match(bodyText, /<svg/);
+});
+
+test("rechaza formato de QR inválido", async (t) => {
+  const { app } = await createTestContext(t);
+
+  await request(app).post("/api/qrs").send({
+    slug: "formato-invalido",
+    destination_url: "https://dofer.mx/landing"
+  });
+
+  const response = await request(app).get(
+    "/api/qrs/formato-invalido/qr?format=jpeg"
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.match(response.body.error, /format inválido/);
+});
+
+test("si slug no existe no genera QR", async (t) => {
+  const { app } = await createTestContext(t);
+
+  const response = await request(app).get("/api/qrs/no-existe/qr");
+  assert.equal(response.statusCode, 404);
+});

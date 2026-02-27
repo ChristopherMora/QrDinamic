@@ -23,11 +23,54 @@ npm start
 
 Servidor por defecto: `http://localhost:3000`
 
+Panel web local: `http://localhost:3000/admin`
+
 ## Variables de entorno
 
 - `PORT` (opcional): puerto del servidor (default: `3000`)
 - `DATA_FILE_PATH` (opcional): ruta del archivo JSON de persistencia (default: `./data/qrs.json`)
 - `FALLBACK_URL` (opcional): fallback para slugs inválidos/inactivos (default: `/qr/not-found`)
+- `PUBLIC_BASE_URL` (opcional): URL pública base para codificar en el QR (ej: `https://dofer.mx`); si no se define, se infiere desde el request
+
+## Despliegue en Dockploy
+
+El proyecto ya incluye:
+- `Dockerfile`
+- `.dockerignore`
+- `docker-compose.yml`
+- `.env.example`
+
+### Opción recomendada (Docker Compose en Dockploy)
+
+1. En Dockploy crea un servicio con este repositorio.
+2. Selecciona `docker-compose.yml` como archivo de despliegue.
+3. Crea un volumen persistente montado en `/app/data` (o usa el volumen `qrdinamic_data` del compose).
+4. Configura estas variables de entorno en Dockploy:
+
+```env
+APP_PORT=3000
+PUBLIC_BASE_URL=https://qr.tudominio.com
+FALLBACK_URL=/qr/not-found
+```
+
+Notas:
+- `APP_PORT` es el puerto externo publicado por Docker Compose.
+- Dentro del contenedor la app corre en `PORT=3000`.
+- `DATA_FILE_PATH` ya queda configurado en el compose como `/app/data/qrs.json`.
+
+### Opción Dockerfile (sin compose)
+
+Si en Dockploy despliegas solo por `Dockerfile`, pon estas variables:
+
+```env
+PORT=3000
+DATA_FILE_PATH=/app/data/qrs.json
+PUBLIC_BASE_URL=https://qr.tudominio.com
+FALLBACK_URL=/qr/not-found
+NODE_ENV=production
+```
+
+Y monta un volumen en `/app/data` para no perder los QRs al reiniciar/redeploy.
 
 ## Rutas públicas
 
@@ -62,6 +105,16 @@ Body:
 ### Obtener detalle
 
 `GET /api/qrs/:slug`
+
+### Generar imagen QR (PNG/SVG)
+
+`GET /api/qrs/:slug/qr`
+
+Query params opcionales:
+- `format`: `png` (default) o `svg`
+- `size`: entero entre `64` y `2048` (default: `300`)
+
+El QR codifica la URL pública de redirección: `https://tu-dominio/qr/{slug}`.
 
 ### Editar destino/nombre/estado
 
@@ -136,6 +189,12 @@ Desactivar:
 
 ```bash
 curl -X POST http://localhost:3000/api/qrs/promo-2026/deactivate
+```
+
+Generar QR en SVG:
+
+```bash
+curl "http://localhost:3000/api/qrs/promo-2026/qr?format=svg"
 ```
 
 Para producción con `Dofer.mx`, después puedes apuntar el dominio al servidor y exponer `https://dofer.mx/qr/{slug}` con proxy (Nginx/Caddy) o despliegue cloud.

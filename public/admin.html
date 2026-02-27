@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control de QR Dinamico</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap");
+
+      :root {
+        --bg-main: #f3ede4;
+        --bg-card: #fffdfa;
+        --ink: #1e2a2f;
+        --ink-soft: #5e6a6f;
+        --accent: #0f766e;
+        --accent-2: #d97706;
+        --danger: #a61b29;
+        --ok: #0b7a38;
+        --line: #d7cec0;
+        --shadow: 0 18px 48px rgba(16, 37, 44, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Chivo", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 5%, rgba(15, 118, 110, 0.18), transparent 38%),
+          radial-gradient(circle at 95% 8%, rgba(217, 119, 6, 0.2), transparent 35%),
+          var(--bg-main);
+      }
+
+      .page {
+        width: min(1180px, 100% - 2rem);
+        margin: 1.2rem auto 2rem;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(1.45rem, 2.6vw, 2.25rem);
+        letter-spacing: 0.02em;
+      }
+
+      .brand p {
+        margin: 0.4rem 0 0;
+        color: var(--ink-soft);
+      }
+
+      .api-link {
+        text-decoration: none;
+        color: var(--bg-card);
+        background: linear-gradient(120deg, #14532d, #0f766e);
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .layout {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 340px 1fr;
+        margin-top: 1rem;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        background: rgba(255, 253, 250, 0.9);
+        backdrop-filter: blur(2px);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        padding: 1rem 1.1rem 0.35rem;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+
+      .panel-head p {
+        margin: 0.4rem 0 0;
+        color: var(--ink-soft);
+        font-size: 0.94rem;
+      }
+
+      .panel-body {
+        padding: 1rem 1.1rem 1.2rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      input[type="text"],
+      input[type="url"],
+      .search-box input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fff;
+        font-size: 0.98rem;
+        padding: 0.72rem 0.8rem;
+        margin-bottom: 0.8rem;
+        font-family: "Chivo", sans-serif;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 0.65rem 0.9rem;
+        cursor: pointer;
+        font-family: "Chivo", sans-serif;
+        font-weight: 700;
+      }
+
+      .btn-main {
+        background: linear-gradient(125deg, var(--accent), #0d9488);
+        color: #fff;
+      }
+
+      .btn-soft {
+        background: #f2ece2;
+        color: var(--ink);
+      }
+
+      .msg {
+        margin-top: 0.55rem;
+        font-size: 0.9rem;
+        min-height: 1.2rem;
+      }
+
+      .msg.error {
+        color: var(--danger);
+      }
+
+      .msg.ok {
+        color: var(--ok);
+      }
+
+      .list-controls {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 1.1rem 0.95rem;
+      }
+
+      .search-field {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .search-label {
+        font-size: 0.76rem;
+        color: var(--ink-soft);
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .list-meta {
+        padding: 0 1.1rem 0.8rem;
+        color: var(--ink-soft);
+      }
+
+      .cards {
+        display: grid;
+        gap: 0.85rem;
+        padding: 0 1.1rem 1.1rem;
+      }
+
+      .qr-card {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 180px 1fr;
+        background: var(--bg-card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 0.9rem;
+        animation: rise 0.4s ease both;
+      }
+
+      .preview-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .preview {
+        border-radius: 11px;
+        border: 1px solid var(--line);
+        background: #fff;
+        width: 100%;
+        aspect-ratio: 1;
+      }
+
+      .link-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+      }
+
+      .link-row .btn {
+        width: 100%;
+        font-size: 0.75rem;
+        text-align: center;
+        padding: 0.5rem 0.2rem;
+      }
+
+      .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+      }
+
+      .slug {
+        margin: 0;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 1.12rem;
+      }
+
+      .badge {
+        padding: 0.28rem 0.62rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .badge.on {
+        background: #d8f7e5;
+        color: #0f6b39;
+      }
+
+      .badge.off {
+        background: #f8dce1;
+        color: #8d1d2a;
+      }
+
+      .meta {
+        margin: 0.5rem 0;
+        font-size: 0.92rem;
+        color: var(--ink-soft);
+        word-break: break-word;
+      }
+
+      .meta a {
+        color: #0f4a7f;
+      }
+
+      .url-grid {
+        display: grid;
+        gap: 0.55rem;
+        margin: 0.65rem 0 0.75rem;
+      }
+
+      .url-item {
+        border: 1px solid #e6dccd;
+        border-radius: 10px;
+        padding: 0.52rem 0.62rem;
+        background: #fffcf7;
+      }
+
+      .url-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .url-label {
+        margin: 0;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .url-value {
+        margin: 0.24rem 0 0;
+      }
+
+      .url-value a {
+        color: #0f4a7f;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.87rem;
+        word-break: break-all;
+      }
+
+      .btn-mini {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f8f2e8;
+        color: #24343a;
+        font-size: 0.72rem;
+        font-family: "Chivo", sans-serif;
+        font-weight: 700;
+        padding: 0.24rem 0.45rem;
+        cursor: pointer;
+      }
+
+      .stats {
+        font-size: 0.9rem;
+      }
+
+      .editor {
+        display: grid;
+        grid-template-columns: 1fr 1fr 170px;
+        gap: 0.55rem;
+        align-items: end;
+        margin-top: 0.7rem;
+      }
+
+      .editor .field {
+        margin: 0;
+      }
+
+      .editor .field input {
+        margin-bottom: 0;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        margin-bottom: 0.36rem;
+      }
+
+      .toggle input {
+        accent-color: var(--accent);
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        color: var(--ink-soft);
+        text-align: center;
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .card-msg {
+        margin-top: 0.45rem;
+        font-size: 0.82rem;
+        min-height: 1.1rem;
+      }
+
+      .action-cell .btn-main {
+        width: 100%;
+      }
+
+      .card-msg.error {
+        color: var(--danger);
+      }
+
+      .card-msg.ok {
+        color: var(--ok);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .qr-card {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-wrap {
+          width: min(260px, 100%);
+        }
+
+        .editor {
+          grid-template-columns: 1fr;
+        }
+
+        .list-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <h1>Panel de control QR</h1>
+          <p>Visualiza tu QR y actualiza el link de redireccion en segundos.</p>
+        </div>
+        <a class="api-link" href="/api/qrs" target="_blank" rel="noreferrer"
+          >Ver API JSON</a
+        >
+      </header>
+
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Crear QR</h2>
+            <p>Slug unico + URL destino.</p>
+          </div>
+          <div class="panel-body">
+            <form id="create-form">
+              <label for="new-slug">Slug</label>
+              <input
+                id="new-slug"
+                name="slug"
+                type="text"
+                placeholder="promo-2026"
+                required
+              />
+
+              <label for="new-destination">URL destino</label>
+              <input
+                id="new-destination"
+                name="destination_url"
+                type="url"
+                placeholder="https://tu-sitio.com/promo"
+                required
+              />
+
+              <label for="new-name">Nombre interno (opcional)</label>
+              <input
+                id="new-name"
+                name="name"
+                type="text"
+                placeholder="Campana principal"
+              />
+
+              <button class="btn btn-main" type="submit">Crear QR</button>
+              <p id="create-msg" class="msg" aria-live="polite"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>QRs registrados</h2>
+            <p>Previsualizacion del QR y control del destino.</p>
+          </div>
+
+          <div class="list-controls">
+            <div class="search-field">
+              <label class="search-label" for="search">Buscar</label>
+              <input id="search" type="text" placeholder="slug o nombre..." />
+            </div>
+            <button id="refresh-btn" class="btn btn-soft" type="button">
+              Actualizar
+            </button>
+          </div>
+
+          <div class="list-meta" id="list-meta">Cargando...</div>
+          <div class="cards" id="cards"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const createForm = document.getElementById("create-form");
+      const createMsg = document.getElementById("create-msg");
+      const cards = document.getElementById("cards");
+      const listMeta = document.getElementById("list-meta");
+      const searchInput = document.getElementById("search");
+      const refreshBtn = document.getElementById("refresh-btn");
+      let searchDebounce = null;
+
+      function setMessage(target, text, kind) {
+        target.textContent = text || "";
+        target.classList.remove("error", "ok");
+        if (kind) {
+          target.classList.add(kind);
+        }
+      }
+
+      async function requestJson(url, options = {}) {
+        const response = await fetch(url, options);
+        const isJson = (response.headers.get("content-type") || "").includes(
+          "application/json"
+        );
+        const payload = isJson ? await response.json() : null;
+
+        if (!response.ok) {
+          const errorText =
+            payload && payload.error
+              ? payload.error
+              : `Error HTTP ${response.status}`;
+          throw new Error(errorText);
+        }
+
+        return payload;
+      }
+
+      function formatDate(rawDate) {
+        if (!rawDate) {
+          return "Sin clicks";
+        }
+        const parsed = new Date(rawDate);
+        return Number.isNaN(parsed.valueOf())
+          ? rawDate
+          : parsed.toLocaleString();
+      }
+
+      async function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const helper = document.createElement("textarea");
+        helper.value = text;
+        helper.setAttribute("readonly", "");
+        helper.style.position = "absolute";
+        helper.style.left = "-9999px";
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand("copy");
+        helper.remove();
+      }
+
+      function createUrlItem(label, url) {
+        const container = document.createElement("div");
+        container.className = "url-item";
+
+        const head = document.createElement("div");
+        head.className = "url-head";
+
+        const title = document.createElement("p");
+        title.className = "url-label";
+        title.textContent = label;
+        head.appendChild(title);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "btn-mini";
+        copyBtn.textContent = "Copiar";
+        copyBtn.addEventListener("click", async () => {
+          const previous = copyBtn.textContent;
+          try {
+            await copyToClipboard(url);
+            copyBtn.textContent = "Copiado";
+          } catch {
+            copyBtn.textContent = "Error";
+          }
+          setTimeout(() => {
+            copyBtn.textContent = previous;
+          }, 1200);
+        });
+        head.appendChild(copyBtn);
+        container.appendChild(head);
+
+        const value = document.createElement("p");
+        value.className = "url-value";
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.target = "_blank";
+        anchor.rel = "noreferrer";
+        anchor.textContent = url;
+        value.appendChild(anchor);
+        container.appendChild(value);
+
+        return container;
+      }
+
+      function createCard(item, index) {
+        const slugEncoded = encodeURIComponent(item.slug);
+        const redirectUrl = `${window.location.origin}/qr/${slugEncoded}`;
+        const qrPreview = `/api/qrs/${slugEncoded}/qr?format=svg&size=240&v=${encodeURIComponent(item.updated_at || Date.now())}`;
+
+        const card = document.createElement("article");
+        card.className = "qr-card";
+        card.style.animationDelay = `${index * 40}ms`;
+
+        const previewWrap = document.createElement("div");
+        previewWrap.className = "preview-wrap";
+
+        const img = document.createElement("img");
+        img.className = "preview";
+        img.src = qrPreview;
+        img.alt = `QR ${item.slug}`;
+        previewWrap.appendChild(img);
+
+        const linkRow = document.createElement("div");
+        linkRow.className = "link-row";
+
+        const openBtn = document.createElement("a");
+        openBtn.href = redirectUrl;
+        openBtn.target = "_blank";
+        openBtn.rel = "noreferrer";
+        openBtn.className = "btn btn-soft";
+        openBtn.textContent = "Probar";
+        linkRow.appendChild(openBtn);
+
+        const svgBtn = document.createElement("a");
+        svgBtn.href = `/api/qrs/${slugEncoded}/qr?format=svg&size=700`;
+        svgBtn.target = "_blank";
+        svgBtn.rel = "noreferrer";
+        svgBtn.className = "btn btn-soft";
+        svgBtn.textContent = "SVG";
+        linkRow.appendChild(svgBtn);
+
+        const pngBtn = document.createElement("a");
+        pngBtn.href = `/api/qrs/${slugEncoded}/qr?format=png&size=700`;
+        pngBtn.target = "_blank";
+        pngBtn.rel = "noreferrer";
+        pngBtn.className = "btn btn-soft";
+        pngBtn.textContent = "PNG";
+        linkRow.appendChild(pngBtn);
+
+        previewWrap.appendChild(linkRow);
+
+        const body = document.createElement("div");
+
+        const cardTop = document.createElement("div");
+        cardTop.className = "card-top";
+
+        const slugTitle = document.createElement("p");
+        slugTitle.className = "slug";
+        slugTitle.textContent = item.slug;
+        cardTop.appendChild(slugTitle);
+
+        const badge = document.createElement("span");
+        badge.className = `badge ${item.is_active ? "on" : "off"}`;
+        badge.textContent = item.is_active ? "Activo" : "Inactivo";
+        cardTop.appendChild(badge);
+        body.appendChild(cardTop);
+
+        const urlGrid = document.createElement("div");
+        urlGrid.className = "url-grid";
+        urlGrid.appendChild(
+          createUrlItem("URL fija del QR (no cambia)", redirectUrl)
+        );
+        urlGrid.appendChild(
+          createUrlItem("URL destino actual (editable)", item.destination_url)
+        );
+        body.appendChild(urlGrid);
+
+        const clicksLine = document.createElement("p");
+        clicksLine.className = "meta stats";
+        clicksLine.textContent = `Clicks: ${item.total_clicks} | Ultimo click: ${formatDate(item.last_click_at)}`;
+        body.appendChild(clicksLine);
+
+        const editor = document.createElement("form");
+        editor.className = "editor";
+
+        const destinationField = document.createElement("div");
+        destinationField.className = "field";
+        const destinationLabel = document.createElement("label");
+        destinationLabel.textContent = "Nuevo destino";
+        destinationLabel.setAttribute("for", `destination-${item.slug}`);
+        destinationField.appendChild(destinationLabel);
+        const destinationInput = document.createElement("input");
+        destinationInput.type = "url";
+        destinationInput.id = `destination-${item.slug}`;
+        destinationInput.value = item.destination_url;
+        destinationInput.required = true;
+        destinationField.appendChild(destinationInput);
+        editor.appendChild(destinationField);
+
+        const nameField = document.createElement("div");
+        nameField.className = "field";
+        const nameLabel = document.createElement("label");
+        nameLabel.textContent = "Nombre interno";
+        nameLabel.setAttribute("for", `name-${item.slug}`);
+        nameField.appendChild(nameLabel);
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.id = `name-${item.slug}`;
+        nameInput.value = item.name || "";
+        nameField.appendChild(nameInput);
+        editor.appendChild(nameField);
+
+        const actionField = document.createElement("div");
+        actionField.className = "action-cell";
+        const toggle = document.createElement("label");
+        toggle.className = "toggle";
+        const activeCheckbox = document.createElement("input");
+        activeCheckbox.type = "checkbox";
+        activeCheckbox.checked = Boolean(item.is_active);
+        toggle.appendChild(activeCheckbox);
+        toggle.append(" Activo");
+        actionField.appendChild(toggle);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "btn btn-main";
+        saveBtn.type = "submit";
+        saveBtn.textContent = "Guardar";
+        actionField.appendChild(saveBtn);
+        editor.appendChild(actionField);
+
+        const cardMsg = document.createElement("p");
+        cardMsg.className = "card-msg";
+
+        editor.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          saveBtn.disabled = true;
+          setMessage(cardMsg, "Guardando...", null);
+
+          try {
+            await requestJson(`/api/qrs/${slugEncoded}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                destination_url: destinationInput.value.trim(),
+                name: nameInput.value.trim() || null,
+                is_active: activeCheckbox.checked
+              })
+            });
+            setMessage(cardMsg, "Actualizado", "ok");
+            await loadQrs(searchInput.value.trim());
+          } catch (error) {
+            setMessage(cardMsg, error.message, "error");
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+
+        body.appendChild(editor);
+        body.appendChild(cardMsg);
+        card.appendChild(previewWrap);
+        card.appendChild(body);
+        return card;
+      }
+
+      async function loadQrs(search = "") {
+        listMeta.textContent = "Cargando...";
+        cards.innerHTML = "";
+
+        try {
+          const query = search ? `?search=${encodeURIComponent(search)}` : "";
+          const data = await requestJson(`/api/qrs${query}`);
+          listMeta.textContent = `${data.total} QR(s) encontrados`;
+
+          if (!data.items.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent = search
+              ? "No hay resultados para esa busqueda."
+              : "Aun no tienes QRs. Crea el primero en el panel izquierdo.";
+            cards.appendChild(empty);
+            return;
+          }
+
+          data.items.forEach((item, index) => {
+            cards.appendChild(createCard(item, index));
+          });
+        } catch (error) {
+          listMeta.textContent = "No se pudo cargar la lista";
+          const fail = document.createElement("div");
+          fail.className = "empty";
+          fail.textContent = error.message;
+          cards.appendChild(fail);
+        }
+      }
+
+      createForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(createForm);
+        const payload = {
+          slug: String(formData.get("slug") || "").trim(),
+          destination_url: String(formData.get("destination_url") || "").trim(),
+          name: String(formData.get("name") || "").trim() || null
+        };
+
+        setMessage(createMsg, "Creando...", null);
+        try {
+          await requestJson("/api/qrs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          createForm.reset();
+          setMessage(createMsg, "QR creado", "ok");
+          await loadQrs(searchInput.value.trim());
+        } catch (error) {
+          setMessage(createMsg, error.message, "error");
+        }
+      });
+
+      refreshBtn.addEventListener("click", () => {
+        loadQrs(searchInput.value.trim());
+      });
+
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+          loadQrs(searchInput.value.trim());
+        }, 250);
+      });
+
+      loadQrs();
+    </script>
+  </body>
+</html>
