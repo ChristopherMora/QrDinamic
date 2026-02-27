@@ -13,9 +13,18 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.qrdinamic.rule=Host(`qr.dofer.mx`)
-      - traefik.http.routers.qrdinamic.entrypoints=web
-      - traefik.http.services.qrdinamic.loadbalancer.server.port=3107
+      # HTTP
+      - traefik.http.routers.qrdinamic-http.rule=Host(`qr.dofer.mx`)
+      - traefik.http.routers.qrdinamic-http.entrypoints=web
+      - traefik.http.routers.qrdinamic-http.service=qrdinamic-svc
+      # HTTPS
+      - traefik.http.routers.qrdinamic-https.rule=Host(`qr.dofer.mx`)
+      - traefik.http.routers.qrdinamic-https.entrypoints=websecure
+      - traefik.http.routers.qrdinamic-https.tls=true
+      - traefik.http.routers.qrdinamic-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.qrdinamic-https.service=qrdinamic-svc
+      # Servicio
+      - traefik.http.services.qrdinamic-svc.loadbalancer.server.port=3107
     networks:
       - dokploy-network
     volumes:
